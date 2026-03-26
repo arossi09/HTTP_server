@@ -12,13 +12,15 @@
 #define MAX_BACKLOG 10
 #define MAX_ENTITY_SIZE
 
-#define STATUS_OK 200
-#define STATUS_NOT_FOUND "404"
+#define STATUS_OK_LINE "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
+#define STATUS_OK_LINE_SIZE 44
+
+typedef enum {HTTP_STATUS_OK, HTTP_STATUS_NOT_FOUND} HttpStatusType;
 
 // enumeration for the different
 // http methods which is held in
 // the request struct
-typedef enum { HTTP_GET, HTTP_POST, HTTP_PUT } HttpMethodType;
+typedef enum { HTTP_GET, HTTP_POST, HTTP_PUT, UNKNOWN } HttpMethodType;
 
 // structure to hold a
 // servers information:
@@ -35,13 +37,14 @@ struct HttpServer{
 // information body, header, url, and type
 struct HttpRequest{
   HttpMethodType method;
+	float version;
   char *uri;
   char *body;
   char *head;
 };
 
 struct HttpResponse{
-  char *status_line;
+	HttpStatusType status;
   /*(general header | response header | entity header)*/
   u32 entity_length;
   // CRLF

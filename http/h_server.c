@@ -50,7 +50,6 @@ i32 http_server_start(HttpServer *http_server) {
               accept(http_server->socket, (struct sockaddr *)&client_address,
                      (socklen_t *)&client_size)) > 0) {
     printf("[Server] Client Connected!\n");
-    printf("%d\n", client_sockfd);
     http_server_connection_handle(client_sockfd);
   }
   close(http_server->socket);
@@ -60,41 +59,18 @@ i32 http_server_start(HttpServer *http_server) {
 // this function handles parsing requests from clients
 // and responding based off whether  the request was a GET, POST, or PUT
 void http_server_connection_handle(u32 client_socket) {
-  printf("[Server] servicing requests from client: %d\n", client_socket);
+  printf("[Server] servicing requests from client\n");
   printf("[Server] Request received\n");
   char request_buff[MAX_REQUEST_SIZE];
   u32 bytes_read = read(client_socket, request_buff, MAX_REQUEST_SIZE);
-  printf("[Server] %s\n", request_buff);
   // we need to parse request and if invalid then said a error back
   HttpRequest http_request = http_request_parse(request_buff, bytes_read);
-  printf("Request\n%s\n%s\n%s\n", http_request.uri, http_request.head,
-         http_request.body);
   HttpResponse http_response = {0};
   // TODO handle if request not parsed
   // we switch on request and handle seperatly
-  switch (http_request.method) {
-  case HTTP_GET:
-    http_response = http_response_get_create(http_request);
-    break;
-  case HTTP_PUT:
-    // send 501
-    break;
-  case HTTP_POST:
-    // send 501
-    break;
-  default:
-    printf("[Server] unrecognized request\n");
-    // TODO function for this
-    char *buf = "HTTP/1.0 400 Bad Request\r\n\r\n";
-    u32 bytes_sent = send(client_socket, buf, strlen(buf) * sizeof(char), 0);
-    if (bytes_sent != strlen(buf)) {
-      printf("[Server] byte mismatch \n\tsent: %d \n\tsize of message: %lu",
-             bytes_sent, strlen(buf));
-    }
-  }
+  http_response = http_response_create(http_request);
   // we respond to the client with the formated response
   http_response_send(http_response, client_socket);
-
   http_response_destroy(&http_response);
   close(client_socket);
 }

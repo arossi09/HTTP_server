@@ -1,25 +1,50 @@
 #include "../http.h"
 #include "h_internal.h"
 
-HttpResponse http_response_get_create(HttpRequest request) {
+char *http_response_get_content_type(const char *path) {
+  const char *ext = strrchr(path, '.');
+
+  if (!ext)
+    return "application/octet-stream";
+
+  if (strcmp(ext, ".html") == 0)
+    return "text/html; charset=utf-8";
+  if (strcmp(ext, ".css") == 0)
+    return "text/css; charset=utf-8";
+
+  return "application/octet-stream";
+}
+
+// this function is used to create a response from a file
+// request
+HttpResponse http_response_file_create(const char *root, HttpRequest request) {
   HttpResponse http_response = {0};
-	char path[30000] = {0};
-	strcpy(path, "/Users/ant/Projects/webserver");
-	strcat(path, request.uri);
+
+  char path[4096];
+
+  int n = snprintf(path, sizeof(path), "%s%s", root, request.uri);
+
+  if (n < 0 || n >= (int)sizeof(path)) {
+    http_response.status = HTTP_STATUS_BAD_REQUEST;
+    return http_response;
+  }
+
   printf("trying to open %s\n", path);
   // TODO sanitize the request uri to not allow '..'
-  int fd = open(path, O_RDONLY, S_IRUSR);
+  int fd = open(path, O_RDONLY);
+
   // we need to send 404 if uri not found
   if (fd < 0) {
-    // TODO need to have this handle return
     printf("[Server] get request uri not found: %s\n", path);
     http_response.status = HTTP_STATUS_NOT_FOUND;
     return http_response;
   }
+
   // we need to gather the file size requested
   lseek(fd, 0, SEEK_END);
   u32 file_size = lseek(fd, 0, SEEK_CUR);
   lseek(fd, 0, SEEK_SET);
+
   // grab the resource and load file
   http_response.entity_length = file_size;
   // we need to allocate memory for the entity body
@@ -32,37 +57,75 @@ HttpResponse http_response_get_create(HttpRequest request) {
       read(fd, http_response.entity_body, http_response.entity_length);
   if (bytes_read < 0 || bytes_read != http_response.entity_length) {
     printf("[Server] failed to read entity body for get response\n");
-    free(http_response.entity_body);
     return http_response;
   }
   http_response.status = HTTP_STATUS_OK;
+  http_response.content_type = http_response_get_content_type(path);
   // TODO check if file_size is bigger than max file_size if not then
   // allocate space in array and read in memory
+  close(fd);
   return http_response;
 }
+
 HttpResponse *http_response_put_create(HttpRequest *request) { return NULL; }
 HttpResponse *http_response_post_create(HttpRequest *request) { return NULL; }
 
+// head function for orchestrating response creation based on the
+// request method
+HttpResponse http_response_create(HttpRequest request) {
+  switch (request.method) {
+  case HTTP_GET:
+    return http_response_file_create("/Users/ant/Projects/webserver", request);
+  default: {
+    HttpResponse response = {0};
+    response.status = HTTP_STATUS_METHOD_NOT_ALLOWED;
+    return response;
+  }
+  }
+}
+
 // this function is used to send back a formated HttpResponse
 // to the client
-int http_response_send(
-    HttpResponse response,
-    i32 client_socket) { // TODO send the response to clinet socket
-
+int http_response_send(HttpResponse response, i32 client_socket) {
+  const char *status_text = NULL;
   switch (response.status) {
   case HTTP_STATUS_OK:
-    send(client_socket, "HTTP/1.1 200 OK\nContent-Type: text/html\n\n",
-         STATUS_OK_LINE_SIZE, 0);
+    status_text = "200 OK";
     break;
   case HTTP_STATUS_NOT_FOUND:
     break;
   default:
     break;
   }
-  send(client_socket, response.entity_body, response.entity_length, 0);
+
+  printf("=====Response=====\n");
+
+  // format the response correctly and send
+  char header[1024];
+  int header_len = snprintf(header, sizeof(header),
+                            "HTTP/1.1 %s \r\n"
+                            "%s\r\n\r\n",
+                            response.content_type, status_text);
+  if (header_len < 0 || header_len >= sizeof(header)) {
+    return 0;
+  }
+  for (int i = 0; i < header_len; i++) {
+    printf("%c", header[i]);
+  }
+  send(client_socket, header, header_len, 0);
+  if (response.entity_body && response.entity_length > 0) {
+    send(client_socket, response.entity_body, response.entity_length, 0);
+    for (int i = 0; i < response.entity_length; i++) {
+      printf("%c", response.entity_body[i]);
+    }
+  }
   return 1;
 }
 
 extern void http_response_destroy(HttpResponse *response) {
+  if (!response)
+    return;
   free(response->entity_body);
+  response->entity_body = NULL;
+  response->entity_length = 0;
 }

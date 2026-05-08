@@ -1,3 +1,4 @@
+#include "../types.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -6,7 +7,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "../types.h"
 
 #define PORT 8080
 #define MAX_BACKLOG 10
@@ -15,7 +15,12 @@
 #define STATUS_OK_LINE "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
 #define STATUS_OK_LINE_SIZE 44
 
-typedef enum {HTTP_STATUS_OK, HTTP_STATUS_NOT_FOUND} HttpStatusType;
+typedef enum {
+  HTTP_STATUS_OK,
+  HTTP_STATUS_NOT_FOUND,
+  HTTP_STATUS_METHOD_NOT_ALLOWED,
+  HTTP_STATUS_BAD_REQUEST,
+} HttpStatusType;
 
 // enumeration for the different
 // http methods which is held in
@@ -26,7 +31,7 @@ typedef enum { HTTP_GET, HTTP_POST, HTTP_PUT, UNKNOWN } HttpMethodType;
 // servers information:
 // port, socket, and address
 // binded to
-struct HttpServer{
+struct HttpServer {
   u16 port;
   u32 socket;
   struct sockaddr_in server_addr;
@@ -35,19 +40,19 @@ struct HttpServer{
 // structure needed
 // for the http request
 // information body, header, url, and type
-struct HttpRequest{
+struct HttpRequest {
   HttpMethodType method;
-	float version;
+  float version;
   char *uri;
   char *body;
   char *head;
 };
 
-struct HttpResponse{
-	HttpStatusType status;
+struct HttpResponse {
+  HttpStatusType status;
   /*(general header | response header | entity header)*/
   u32 entity_length;
   // CRLF
   char *entity_body;
-}; 
-
+  char *content_type;
+};

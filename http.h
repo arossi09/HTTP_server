@@ -25,18 +25,18 @@ extern void http_server_connection_handle(u32 client_socket);
 extern void http_server_destroy(HttpServer *server);
 
 /* ------------ HTTP request parsing ------------ */
-extern HttpRequest *http_request_post_parse(char *request_byte_stream);
-extern HttpRequest *http_request_put_parse(char *request_byte_stream);
-extern HttpRequest *http_request_get_parse(char *request_byte_stream);
+//extern HttpRequest *http_request_post_parse(char *request_byte_stream);
+//extern HttpRequest *http_request_put_parse(char *request_byte_stream);
+//extern HttpRequest *http_request_get_parse(char *request_byte_stream);
 extern HttpRequest http_request_parse(char *request_data, u32 request_size);
 extern void http_request_destroy(
     HttpRequest *request); /*frees memory allocted for request*/
 
 /* ------------ HTTP response creation ------------ */
 /*creates a response based on the request*/
-extern HttpResponse http_response_get_create (HttpRequest request); 
-extern HttpResponse *http_response_put_create(HttpRequest *request);
-extern HttpResponse *http_response_post_create(HttpRequest *request);
+extern HttpResponse http_response_create(HttpRequest request);
+// extern HttpResponse *http_response_put_create(HttpRequest *request);
+// extern HttpResponse *http_response_post_create(HttpRequest *request);
 extern int
 http_response_send(HttpResponse response,
                    i32 client_socket); /*sends the response to the client*/

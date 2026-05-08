@@ -24,9 +24,7 @@ HttpMethodType http_get_method(char *method) {
 HttpRequest http_request_parse(char *request_data, u32 request_size) {
   HttpRequest request = {0};
   // we print the full request for debugging
-  for (u32 i = 0; i < request_size; i++) {
-    printf("%c", request_data[i]);
-  }
+  printf("========Request=======\n");
 
   // we need to mark the end of the request line
   for (u32 i = 0; i < request_size - 2; i++) {
@@ -56,6 +54,7 @@ HttpRequest http_request_parse(char *request_data, u32 request_size) {
   request.version = (float)atof(http_version);
 
   // we need to gather all header key value pairs
+  /*
   queue_t headers;
   queue_create(&headers);
   char *key_pair_entry = strtok(request_headers, "\n");
@@ -66,16 +65,18 @@ HttpRequest http_request_parse(char *request_data, u32 request_size) {
 
   char *header = (char *)queue_dequeue(&headers);
   while (!queue_is_empty(&headers)) {
-		//add 
-		//char *key = strtok(header, ":");
-		//char *value = strtok(NULL, "|");
-		//TODO add this pair to a dictionary
-    header = queue_dequeue(&headers);
-    printf("Size %lu, Header: %s\n", queue_size(&headers), header);
+    // add
+    // char *key = strtok(header, ":");
+    // char *value = strtok(NULL, "|");
+    // TODO add this pair to a dictionary
+    //header = queue_dequeue(&headers);
+    //printf("Size %lu, Header: %s\n", queue_size(&headers), header);
   }
+  */
   return request;
 }
 
+/*
 HttpRequest *http_request_get_parse(char *request_byte_stream) {
   HttpRequest *http_request = (HttpRequest *)malloc(sizeof(HttpRequest));
   if (!http_request) {
@@ -105,6 +106,7 @@ HttpRequest *http_request_get_parse(char *request_byte_stream) {
 
 HttpRequest *http_request_post_parse(char *request_byte_stream) { return NULL; }
 HttpRequest *http_request_put_parse(char *request_byte_stream) { return NULL; }
+*/
 
 void http_request_destroy(HttpRequest *request) {
   free(request->uri);

@@ -20,17 +20,24 @@ char *http_response_get_content_type(const char *path) {
 HttpResponse http_response_file_create(const char *root, HttpRequest request) {
   HttpResponse http_response = {0};
 
-  char path[4096];
+  char path[MAX_PATH];
 
+  // add index.html to endpath if uri
+  // requested is a directory
   int n = snprintf(path, sizeof(path), "%s%s", root, request.uri);
+
+  int len = strlen(request.uri);
+  if (request.uri[len - 1] == '/') {
+    n = snprintf(path, sizeof(path), "%sindex.html", path);
+  }
 
   if (n < 0 || n >= (int)sizeof(path)) {
     http_response.status = HTTP_STATUS_BAD_REQUEST;
     return http_response;
   }
 
-  printf("trying to open %s\n", path);
   // TODO sanitize the request uri to not allow '..'
+  printf("trying to open %s\n", path);
   int fd = open(path, O_RDONLY);
 
   // we need to send 404 if uri not found
@@ -44,6 +51,13 @@ HttpResponse http_response_file_create(const char *root, HttpRequest request) {
   lseek(fd, 0, SEEK_END);
   u32 file_size = lseek(fd, 0, SEEK_CUR);
   lseek(fd, 0, SEEK_SET);
+  /*
+  if (file_size > MAX_FILE_SIZE) {
+    printf("[Server] file size exceeds max file size\n");
+    http_response.status = HTTP_STATUS_MAX_FILE_SIZE;
+    return http_response;
+  }
+  */
 
   // grab the resource and load file
   http_response.entity_length = file_size;
@@ -61,8 +75,6 @@ HttpResponse http_response_file_create(const char *root, HttpRequest request) {
   }
   http_response.status = HTTP_STATUS_OK;
   http_response.content_type = http_response_get_content_type(path);
-  // TODO check if file_size is bigger than max file_size if not then
-  // allocate space in array and read in memory
   close(fd);
   return http_response;
 }
@@ -75,7 +87,8 @@ HttpResponse *http_response_post_create(HttpRequest *request) { return NULL; }
 HttpResponse http_response_create(HttpRequest request) {
   switch (request.method) {
   case HTTP_GET:
-    return http_response_file_create("/Users/ant/Projects/webserver", request);
+    return http_response_file_create("/Users/ant/Projects/webserver/webpage",
+                                     request);
   default: {
     HttpResponse response = {0};
     response.status = HTTP_STATUS_METHOD_NOT_ALLOWED;
@@ -93,6 +106,10 @@ int http_response_send(HttpResponse response, i32 client_socket) {
     status_text = "200 OK";
     break;
   case HTTP_STATUS_NOT_FOUND:
+    status_text = "404 Not Found";
+    break;
+  case HTTP_STATUS_MAX_FILE_SIZE:
+    status_text = "500 Internal Server Error";
     break;
   default:
     break;
@@ -101,18 +118,21 @@ int http_response_send(HttpResponse response, i32 client_socket) {
   printf("=====Response=====\n");
 
   // format the response correctly and send
-  char header[1024];
+  char header[MAX_HEADER_SIZE];
   int header_len = snprintf(header, sizeof(header),
                             "HTTP/1.1 %s \r\n"
                             "%s\r\n\r\n",
                             response.content_type, status_text);
-  if (header_len < 0 || header_len >= sizeof(header)) {
+  if (header_len < 0 || header_len >= MAX_HEADER_SIZE) {
+    printf("[Server] exceeded max header size\n");
     return 0;
   }
   for (int i = 0; i < header_len; i++) {
     printf("%c", header[i]);
   }
+
   send(client_socket, header, header_len, 0);
+
   if (response.entity_body && response.entity_length > 0) {
     send(client_socket, response.entity_body, response.entity_length, 0);
     for (int i = 0; i < response.entity_length; i++) {

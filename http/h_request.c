@@ -53,60 +53,9 @@ HttpRequest http_request_parse(char *request_data, u32 request_size) {
   request.uri = uri;
   request.version = (float)atof(http_version);
 
-  // we need to gather all header key value pairs
-  /*
-  queue_t headers;
-  queue_create(&headers);
-  char *key_pair_entry = strtok(request_headers, "\n");
-  while (key_pair_entry) {
-    queue_enqueue(&headers, key_pair_entry);
-    key_pair_entry = strtok(NULL, "\n");
-  }
-
-  char *header = (char *)queue_dequeue(&headers);
-  while (!queue_is_empty(&headers)) {
-    // add
-    // char *key = strtok(header, ":");
-    // char *value = strtok(NULL, "|");
-    // TODO add this pair to a dictionary
-    //header = queue_dequeue(&headers);
-    //printf("Size %lu, Header: %s\n", queue_size(&headers), header);
-  }
-  */
   return request;
 }
 
-/*
-HttpRequest *http_request_get_parse(char *request_byte_stream) {
-  HttpRequest *http_request = (HttpRequest *)malloc(sizeof(HttpRequest));
-  if (!http_request) {
-    printf("[Server] failed to allocate memory for request\n");
-    return NULL;
-  }
-  request_byte_stream = strtok(NULL, " ");
-  printf("Test: %s\n", request_byte_stream);
-  if (request_byte_stream) {
-    printf("[Server] could not read file from get request: %s\n",
-           request_byte_stream);
-    return NULL;
-  }
-  // TODO read header
-  http_request->head = NULL;
-  // TODO if streln of token exceed some limit send back 414
-  http_request->uri = (char *)malloc(strlen(request_byte_stream));
-  if (!*http_request->uri) {
-    printf("[Server] Failed to allocate memory for get uri\n");
-    free(http_request);
-    return NULL;
-  }
-  strcpy(http_request->uri, request_byte_stream);
-  http_request->method = HTTP_GET;
-  return http_request;
-}
-
-HttpRequest *http_request_post_parse(char *request_byte_stream) { return NULL; }
-HttpRequest *http_request_put_parse(char *request_byte_stream) { return NULL; }
-*/
 
 void http_request_destroy(HttpRequest *request) {
   free(request->uri);

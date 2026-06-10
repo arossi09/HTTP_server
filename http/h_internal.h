@@ -10,7 +10,9 @@
 
 #define PORT 8080
 #define MAX_BACKLOG 10
-#define MAX_ENTITY_SIZE
+#define MAX_PATH KiB(4)
+#define MAX_FILE_SIZE GiB(1)
+#define MAX_HEADER_SIZE KiB(4)
 
 #define STATUS_OK_LINE "HTTP/1.1 200 OK\nContent-Type: text/html\n\n";
 #define STATUS_OK_LINE_SIZE 44
@@ -20,6 +22,7 @@ typedef enum {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_METHOD_NOT_ALLOWED,
   HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_MAX_FILE_SIZE
 } HttpStatusType;
 
 // enumeration for the different

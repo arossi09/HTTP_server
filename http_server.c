@@ -1,7 +1,5 @@
 #include "http.h"
 
-//TODO implement response creation for get and response send
-
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     printf("Usage: ./webserver [PORT_NUMBER]\n");

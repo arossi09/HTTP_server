@@ -34,6 +34,24 @@ HttpServer *http_server_create(u16 port) {
   return http_server;
 }
 
+// this function handles parsing requests from clients
+// and responding based off whether  the request was a GET, POST, or PUT
+void http_server_connection_handle(u32 client_socket) {
+  printf("[Server] servicing requests from client\n");
+  printf("[Server] Request received\n");
+  char request_buff[MAX_REQUEST_SIZE];
+  u32 bytes_read = read(client_socket, request_buff, MAX_REQUEST_SIZE);
+  // we need to parse request and if invalid then said a error back
+  HttpRequest http_request = http_request_parse(request_buff, bytes_read);
+  HttpResponse http_response = {0};
+  // we switch on request and handle seperatly
+  http_response = http_response_create(http_request);
+  // we respond to the client with the formated response
+  http_response_send(http_response, client_socket);
+  http_response_destroy(&http_response);
+  close(client_socket);
+}
+
 i32 http_server_start(HttpServer *http_server) {
   printf("[Server] listening for connections...\n");
   // while listening accept connections
@@ -56,25 +74,8 @@ i32 http_server_start(HttpServer *http_server) {
   return 0;
 }
 
-// this function handles parsing requests from clients
-// and responding based off whether  the request was a GET, POST, or PUT
-void http_server_connection_handle(u32 client_socket) {
-  printf("[Server] servicing requests from client\n");
-  printf("[Server] Request received\n");
-  char request_buff[MAX_REQUEST_SIZE];
-  u32 bytes_read = read(client_socket, request_buff, MAX_REQUEST_SIZE);
-  // we need to parse request and if invalid then said a error back
-  HttpRequest http_request = http_request_parse(request_buff, bytes_read);
-  HttpResponse http_response = {0};
-  // TODO handle if request not parsed
-  // we switch on request and handle seperatly
-  http_response = http_response_create(http_request);
-  // we respond to the client with the formated response
-  http_response_send(http_response, client_socket);
-  http_response_destroy(&http_response);
-  close(client_socket);
-}
-
 void http_server_destroy(HttpServer *server) {
-  // TODO free server memory
+  if (server) {
+    free(server);
+  }
 }

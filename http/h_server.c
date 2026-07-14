@@ -1,5 +1,16 @@
 #include "../http.h"
 #include "h_internal.h"
+#include <pthread.h>
+#include <semaphore.h>
+
+// TODO limit connections to 64 via semaphor
+// TODO add timeout to each socket
+// TODO add nginx reverse proxy for TLS, etc.
+
+struct thread_arg {
+  i32 socket;
+  sem_t *sem;
+};
 
 // we need this function in order to start
 // the server passed
@@ -36,9 +47,15 @@ HttpServer *http_server_create(u16 port) {
 
 // this function handles parsing requests from clients
 // and responding based off whether  the request was a GET, POST, or PUT
-void http_server_connection_handle(u32 client_socket) {
+void *http_server_connection_handle(void *socket /*void *arg*/) {
   printf("[Server] servicing requests from client\n");
   printf("[Server] Request received\n");
+  // struct thread_arg *args = arg;
+
+  // sem_wait(args->sem);
+
+  i32 client_socket = (i32)(intptr_t)socket;
+
   char request_buff[MAX_REQUEST_SIZE];
   u32 bytes_read = read(client_socket, request_buff, MAX_REQUEST_SIZE);
   // we need to parse request and if invalid then said a error back
@@ -50,6 +67,9 @@ void http_server_connection_handle(u32 client_socket) {
   http_response_send(http_response, client_socket);
   http_response_destroy(&http_response);
   close(client_socket);
+  pthread_exit(NULL);
+
+  // sem_post(args->sem);
 }
 
 i32 http_server_start(HttpServer *http_server) {
@@ -64,11 +84,29 @@ i32 http_server_start(HttpServer *http_server) {
   i32 client_sockfd;
   struct sockaddr_in client_address;
   u32 client_size = sizeof(client_address);
+
+  /*
+  struct thread_arg targs;
+  sem_t sem = 64;
+
+  targs.sem = &sem;
+  */
+
   while ((client_sockfd =
               accept(http_server->socket, (struct sockaddr *)&client_address,
                      (socklen_t *)&client_size)) > 0) {
     printf("[Server] Client Connected!\n");
-    http_server_connection_handle(client_sockfd);
+
+    // targs.socket = client_sockfd;
+    pthread_t thread;
+
+    if (pthread_create(&thread, NULL, http_server_connection_handle,
+                       (void *)(intptr_t)client_sockfd) != 0) {
+      close(client_sockfd);
+      continue;
+    }
+
+    pthread_detach(thread);
   }
   close(http_server->socket);
   return 0;

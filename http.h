@@ -20,7 +20,7 @@ extern HttpServer *http_server_create(u16 port);
 /*starts listening to connections on the addressspecificed*/
 extern int http_server_start(HttpServer *server);
 /*handles requests and responding to connection*/
-extern void http_server_connection_handle(u32 client_socket);
+extern void *http_server_connection_handle(void *client_socket);
 /*starts listening to connections on the addressspecificed*/
 extern void http_server_destroy(HttpServer *server);
 
